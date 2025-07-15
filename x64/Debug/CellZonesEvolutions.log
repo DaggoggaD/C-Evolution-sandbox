@@ -1,0 +1,88 @@
+﻿  main.c
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(48,30): warning C4244: 'funzione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(48,33): warning C4244: 'funzione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(49,31): warning C4244: 'funzione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(49,34): warning C4244: 'funzione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(40,17): warning C4244: 'inizializzazione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(41,17): warning C4244: 'inizializzazione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(85,9): warning C4033: 'instantiate_Terrain' deve restituire un valore
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(91,9): warning C4033: 'instantiate_Terrain' deve restituire un valore
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(96,11): warning C4244: 'funzione': conversione da 'time_t' a 'unsigned int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(97,12): warning C4244: '=': conversione da 'double' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(105,58): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(105,80): warning C4244: 'funzione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(105,88): warning C4244: 'funzione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(105,95): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(108,37): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(108,39): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(176,9): warning C4033: 'instantiate_Terrain' deve restituire un valore
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(102,19): warning C4101: 'color': variabile locale senza riferimenti
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(216,18): warning C4244: '=': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(217,18): warning C4244: '=': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(296,39): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(299,39): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(302,30): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(305,50): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(305,75): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(306,50): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(306,75): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(307,50): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(307,77): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(314,86): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(314,110): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(327,54): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(327,109): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(331,23): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(332,47): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(332,73): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(397,24): warning C4098: 'find_Nearby_Plants': la funzione 'void' restituisce un valore
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(404,24): warning C4244: '=': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(409,29): warning C4047: '==': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(420,29): warning C4244: '=': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(392,9): warning C4047: 'inizializzazione': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(393,9): warning C4047: 'inizializzazione': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(394,20): warning C4244: 'inizializzazione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(437,24): warning C4098: 'find_Nearby_Entities': la funzione 'void' restituisce un valore
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(447,24): warning C4244: '=': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(462,29): warning C4047: '==': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(476,28): warning C4244: '=': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(432,9): warning C4047: 'inizializzazione': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(433,27): warning C4244: 'inizializzazione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(434,20): warning C4244: 'inizializzazione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(554,112): warning C4244: 'funzione': conversione da 'double' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(558,34): warning C4047: '!=': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(568,64): warning C4305: '-=': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(569,93): warning C4244: '+=': conversione da 'double' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(607,103): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(607,135): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(631,13): warning C4013: 'memcpy' non definita. Verrà considerata come esterna che restituisce un int.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(639,476): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(639,500): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(508,67): warning C4244: 'inizializzazione': conversione da 'double' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(535,13): warning C4047: 'inizializzazione': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(536,13): warning C4047: 'inizializzazione': 'int' differisce da 'void *' nei livelli di riferimento indiretto
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(667,53): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(667,58): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(667,66): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(667,71): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(667,79): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(670,30): warning C4305: '=': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(681,61): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(681,69): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(681,79): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(696,58): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(696,67): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(696,75): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(696,85): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(710,56): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(710,74): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(710,88): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(724,51): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(724,68): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(724,82): warning C4305: 'funzione': troncamento da 'double' a 'float'
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(766,55): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(767,55): warning C4244: 'funzione': conversione da 'float' a 'int'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(806,90): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(806,98): warning C4244: 'inizializzazione': conversione da 'int' a 'float'. Possibile perdita di dati.
+C:\Users\dacco\source\repos\CellZonesEvolutions\CellZonesEvolutions\main.c(182,1): warning C4715: 'instantiate_Terrain': non tutti i percorsi di controllo restituiscono un valore
+  CellZonesEvolutions.vcxproj -> C:\Users\dacco\source\repos\CellZonesEvolutions\x64\Debug\CellZonesEvolutions.exe
