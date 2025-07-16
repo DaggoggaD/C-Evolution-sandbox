@@ -1,76 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include <omp.h>
 #include "Dependecies.h"
 #include "main.h"
-#include <omp.h>
 
-static int SEED = 100;
-
-//PERLIN NOISE IMPLEMENTATION https://gist.github.com/nowl/828013?utm_source=chatgpt.com by nowl
-static int hash[] = { 208,34,231,213,32,248,233,56,161,78,24,140,71,48,140,254,245,255,247,247,40,
-                     185,248,251,245,28,124,204,204,76,36,1,107,28,234,163,202,224,245,128,167,204,
-                     9,92,217,54,239,174,173,102,193,189,190,121,100,108,167,44,43,77,180,204,8,81,
-                     70,223,11,38,24,254,210,210,177,32,81,195,243,125,8,169,112,32,97,53,195,13,
-                     203,9,47,104,125,117,114,124,165,203,181,235,193,206,70,180,174,0,167,181,41,
-                     164,30,116,127,198,245,146,87,224,149,206,57,4,192,210,65,210,129,240,178,105,
-                     228,108,245,148,140,40,35,195,38,58,65,207,215,253,65,85,208,76,62,3,237,55,89,
-                     232,50,217,64,244,157,199,121,252,90,17,212,203,149,152,140,187,234,177,73,174,
-                     193,100,192,143,97,53,145,135,19,103,13,90,135,151,199,91,239,247,33,39,145,
-                     101,120,99,3,186,86,99,41,237,203,111,79,220,135,158,42,30,154,120,67,87,167,
-                     135,176,183,191,253,115,184,21,233,58,129,233,142,39,128,211,118,137,139,255,
-                     114,20,218,113,154,27,127,246,250,1,8,198,250,209,92,222,173,21,88,102,219 };
-
-int noise2(int x, int y)
-{
-    int tmp = hash[(y + SEED) % 256];
-    return hash[(tmp + x) % 256];
-}
-
-float lin_inter(float x, float y, float s)
-{
-    return x + s * (y - x);
-}
-
-float smooth_inter(float x, float y, float s)
-{
-    return lin_inter(x, y, s * s * (3 - 2 * s));
-}
-
-float noise2d(float x, float y)
-{
-    int x_int = x;
-    int y_int = y;
-    float x_frac = x - x_int;
-    float y_frac = y - y_int;
-    int s = noise2(x_int, y_int);
-    int t = noise2(x_int + 1, y_int);
-    int u = noise2(x_int, y_int + 1);
-    int v = noise2(x_int + 1, y_int + 1);
-    float low = smooth_inter(s, t, x_frac);
-    float high = smooth_inter(u, v, x_frac);
-    return smooth_inter(low, high, y_frac);
-}
-
-float perlin2d(float x, float y, float freq, int depth)
-{
-    float xa = x * freq;
-    float ya = y * freq;
-    float amp = 1.0;
-    float fin = 0;
-    float div = 0.0;
-
-    int i;
-    for (i = 0; i < depth; i++)
-    {
-        div += 256 * amp;
-        fin += noise2d(xa, ya) * amp;
-        amp /= 2;
-        xa *= 2;
-        ya *= 2;
-    }
-
-    return fin / div;
-}
-//END PERLIN NOISE IMPLEMENTATION
 
 //Creates the whole terrain texture, speeding up Draw calls.
 //Initializes TerrainCells and trees array. Assigns proprieties to each tile.
@@ -181,34 +113,6 @@ RenderTexture2D instantiate_Terrain() {
     return terrainTex;
 }
 
-//Creates proprieties for terrain types, used at beginnig of main call
-LandProprieties create_Proprieties(float plantDevelop, float speedMultPred, float energyConsMultPred, float speedMultPrey, float energyConsMultPrey, float reproductionSpeedMult, float energyPerPlantMult, float geneticChangeProbMult, float agingMult) {
-    LandProprieties currProp;
-    currProp.plantDevelopMult = plantDevelop;
-    currProp.speedMultPred = speedMultPred;
-    currProp.energyConsMultPred = energyConsMultPred;
-    currProp.speedMultPrey = speedMultPrey;
-    currProp.energyConsMultPrey = energyConsMultPrey;
-    currProp.reproductionSpeedMult = reproductionSpeedMult;
-    currProp.energyPerPlantMult = energyPerPlantMult;
-    currProp.geneticChangeProbMult = geneticChangeProbMult;
-    currProp.agingMult = agingMult;
-    return currProp;
-}
-
-//Creates an unique color, based on value and max value.
-Color get_Unique_Color(float t, float n) {
-    if (n <= 0.0f) return BLACK; 
-    if (t < 0.0f) t = 0.0f;
-    if (t > n) t = n;
-
-    float hue = (t / n) * 360.0f; 
-    float saturation = 0.8f;
-    float value = 0.9f;
-
-    return ColorFromHSV(hue, saturation, value);
-}
-
 //Generates a single entity (both cell starting stats and genome). 
 //For debug purposes, "custom" argument is passed. 0, random instantiation. 1, custom instantiation
 Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float acceleration, float sightSize, float reproductionSpeed, float agingSpeed, Vector2 customPosition) {
@@ -246,16 +150,17 @@ Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float
         currEntity.position = customPosition;
     }
     currEntity.genome = genome;
-    
+
     //Assigns a custom color to each entity based on it's genome traits
     float geneSum = genome.speed + genome.turnSpeed + genome.acceleration + genome.sightSize + genome.reproductionSpeed + genome.agingSpeed;
     currEntity.color = get_Unique_Color(geneSum, GENOME_TRAITS);
-    
+
     int xZone = (int)floor(currEntity.position.x / (2 * ENTITY_SIGHT_MULTIPLYER));
     int yZone = (int)floor(currEntity.position.y / (2 * ENTITY_SIGHT_MULTIPLYER));
     int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)); //TODO: FIRST OF EVERY ROW HAS SAME AS LAST OF PREVIOUS
     currEntity.zoneIndex = index;
     currEntity.debug = 0;
+    currEntity.passingCellIndex = NULL;
 
     return currEntity;
 }
@@ -270,13 +175,28 @@ void instantiate_Entities_Start() {
     }
     //Creates entity zones array, used to store entities in a certain zone. Not yet implemented, probably high gains in fps.
     entitiesZones = (Entity**)malloc(sizeof(Entity*) * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)) * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)));
-    
+
     while (i < STARTING_ENTITIES) {
-        Entity curr = generate_Entity(0, 0, 0, 0, 0, 0, 0, 0, (Vector2){0,0});
+        Entity curr = generate_Entity(0, 0, 0, 0, 0, 0, 0, 0, (Vector2) { 0, 0 });
         entities[i] = curr;
         i++;
     }
     entitiesN = STARTING_ENTITIES;
+}
+
+//Creates proprieties for terrain types, used at beginnig of main call
+LandProprieties create_Proprieties(float plantDevelop, float speedMultPred, float energyConsMultPred, float speedMultPrey, float energyConsMultPrey, float reproductionSpeedMult, float energyPerPlantMult, float geneticChangeProbMult, float agingMult) {
+    LandProprieties currProp;
+    currProp.plantDevelopMult = plantDevelop;
+    currProp.speedMultPred = speedMultPred;
+    currProp.energyConsMultPred = energyConsMultPred;
+    currProp.speedMultPrey = speedMultPrey;
+    currProp.energyConsMultPrey = energyConsMultPrey;
+    currProp.reproductionSpeedMult = reproductionSpeedMult;
+    currProp.energyPerPlantMult = energyPerPlantMult;
+    currProp.geneticChangeProbMult = geneticChangeProbMult;
+    currProp.agingMult = agingMult;
+    return currProp;
 }
 
 //Draws all entities.
@@ -365,23 +285,6 @@ int find_Close_Zones(int zone, int* out) {
     }
 
     return count;
-}
-
-//Calculates [SQUARED!] distance between two points.
-float calc_Distance(Vector2 source, Vector2 destination) {
-    float distancex = source.x - destination.x;
-    float distancey = source.y - destination.y;
-
-    return distancex * distancex + distancey * distancey;
-}
-
-//Checks if element is in array.
-int is_In_Array(int* arr, int lenght, int find) {
-    for (int i = 0; i < lenght; i++)
-    {
-        if (arr[i] == find) return 1;
-    }
-    return 0;
 }
 
 //Find plants within ENTITY_SIGHT_MULTIPLYER
@@ -476,147 +379,165 @@ void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* pr
     *closestPrayDistance = closestDistance;
 }
 
-//NEEDS TO BE UPDATED!!!!!
+//Returns bonuses to be applied to the cell, based on the type of terrain it's currently walking on.
+LandProprieties calculate_Terrain_Bonuses(int entityIndex) {
+    LandProprieties Bonuses = create_Proprieties(1, 1, 1, 1, 1, 1, 1, 1, 1);
+    if (entities[entityIndex].passingCellIndex != NULL && entities[entityIndex].passingCellIndex > 0 && entities[entityIndex].passingCellIndex < WORLD_WIDTH * WORLD_HEIGHT) {
+        Bonuses = TerrainCells[entities[entityIndex].passingCellIndex].group->proprieties;
+    }
+    return Bonuses;
+}
+
+//Returns energy consumed this iteration.
+float calculate_Energy_Consumption(int entityIndex, LandProprieties Bonuses) {
+    float consumptionSum = entities[entityIndex].genome.speed + entities[entityIndex].genome.acceleration + entities[entityIndex].genome.sightSize + entities[entityIndex].genome.reproductionSpeed - entities[entityIndex].genome.reproductionSpeed;
+    float consumptionDelta = (consumptionSum / GENOME_TRAITS) * ENTITIES_CONSUMPTION_MULTIPLIER;
+    //move it in other if to improve performance (slightly)
+    if (entities[entityIndex].prey == 1) consumptionDelta *= Bonuses.energyConsMultPrey;
+    else consumptionDelta *= Bonuses.energyConsMultPred;
+    return consumptionDelta;
+}
+
+//Returns the current zone an entity is in. Used to calculate distances.
+int calculate_Updated_Zone(int entityIndex) {
+    int xZone = (int)(entities[entityIndex].position.x / (2 * ENTITY_SIGHT_MULTIPLYER));
+    int yZone = (int)(entities[entityIndex].position.y / (2 * ENTITY_SIGHT_MULTIPLYER));
+    int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER));
+    return index;
+}
+
+//Updates entity position, going towards closest plant/entity.
+void update_Entity_Position(int i, LandProprieties Bonuses) {
+    //Close entities / plants arrays
+    int closePredatorsIndexes[MAX_NEIGHBOURS_SIZE];
+    int closePreysIndexes[MAX_NEIGHBOURS_SIZE];
+    int closeEntitiesIndexes[MAX_NEIGHBOURS_SIZE];
+    int closePlantIndexes[MAX_NEIGHBOURS_PLANT_SIZE];
+
+    //Close arrays infos
+    int closeEntitiesN = 0;
+    int closePredatorsN = 0;
+    int closePreysN = 0;
+    int closestPlantsN = 0;
+
+    //Closest entities info
+    int closestPreyIndex = NULL;
+    int closestPlantIndex = NULL;
+    float closestPlantDistance = INFINITY;
+    float closestPreyDistance = INFINITY;
+
+    find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes, &closeEntitiesN, &closePreysN, &closePredatorsN, &closestPreyIndex, &closestPreyDistance);
+    find_Nearby_Plants(i, closePlantIndexes, &closestPlantsN, &closestPlantIndex, &closestPlantDistance);
+
+    //Preys
+    if (entities[i].prey == 1) {
+        //Escape from predators
+        if (closePredatorsN != 0) {
+            Vector2 direction = (Vector2){ 0,0 };
+            for (int j = 0; j < closePredatorsN; j++)
+            {
+                direction.x -= entities[closePredatorsIndexes[j]].position.x - entities[i].position.x;
+                direction.y -= entities[closePredatorsIndexes[j]].position.y - entities[i].position.y;
+            }
+            direction = Vector2Normalize(direction);
+            entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, 1 * Bonuses.speedMultPrey * DELTA_TIME * entities[i].genome.speed));
+        }
+
+        //Move towards closest plant
+        if (closestPlantIndex != NULL)
+        {
+            Vector2 direction = (Vector2){ 0,0 };
+            direction.x += trees[closestPlantIndex].worldPosition.x - entities[i].position.x;
+            direction.y += trees[closestPlantIndex].worldPosition.y - entities[i].position.y;
+            direction = Vector2Normalize(direction);
+            entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPrey * entities[i].genome.speed));
+
+            //Eat plant if still existing, destroy it otherwise
+            if (closestPlantDistance < TREE_ASSIMILATION_DISTANCE * TERRAIN_CELL_SIZE && trees[closestPlantIndex].treeEnergy > 0 && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
+                trees[closestPlantIndex].treeEnergy -= 0.1 * DELTA_TIME;
+                entities[i].energyBalance += trees[closestPlantIndex].energyValue * 0.1 * DELTA_TIME * Bonuses.energyPerPlantMult;
+            }
+            else if (trees[closestPlantIndex].treeEnergy <= 0) {
+                trees[closestPlantIndex].treeEnergy = TREE_ENERGY;
+                (trees[closestPlantIndex].assignedCell)->cellTree = NULL;
+                int success = 0;
+                while (success == 0) {
+                    int randomCell = GetRandomValue(0, terrainCellsN - 1);
+                    if (TerrainCells[randomCell].cellTree != NULL) continue;
+                    float randomTreeChance = ((float)rand() / RAND_MAX) * (TerrainCells[randomCell].group->proprieties.plantDevelopMult);
+                    float inner_rand = (float)rand() / RAND_MAX;
+                    if (randomTreeChance > 0.9 && inner_rand > 0.7) {
+                        success = 1;
+                        TerrainCells[randomCell].cellTree = &trees[closestPlantIndex];
+                        trees[closestPlantIndex].assignedCell = &TerrainCells[randomCell];
+                        trees[closestPlantIndex].worldPosition = Vector2Scale(TerrainCells[randomCell].position, TERRAIN_CELL_SIZE);
+                        trees[closestPlantIndex].DEBUG = 1;
+
+                        int xZone = (int)floor(trees[closestPlantIndex].worldPosition.x / (2 * ENTITY_SIGHT_MULTIPLYER));
+                        int yZone = (int)floor(trees[closestPlantIndex].worldPosition.y / (2 * ENTITY_SIGHT_MULTIPLYER));
+                        int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)); //TODO: FIRST OF EVERY ROW HAS SAME AS LAST OF PREVIOUS
+                        trees[closestPlantIndex].zoneIndex = index;
+
+                    }
+                }
+            }
+        }
+
+    }
+
+    //Predators
+    else {
+        if (closePreysN != 0) {
+            Vector2 direction = Vector2Subtract(entities[closestPreyIndex].position, entities[i].position);
+            direction = Vector2Normalize(direction);
+            entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPred * entities[i].genome.speed * 2));
+            if (closestPreyDistance < PREY_ASSIMILATION_DISTANCE * TERRAIN_CELL_SIZE && entities[closestPreyIndex].energyBalance > MIN_ENERGY_BALANCE && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
+                entities[closestPreyIndex].energyBalance -= 1 * DELTA_TIME;
+                entities[i].energyBalance += 1 * DELTA_TIME;
+            }
+        }
+    }
+
+
+}
+
 //Updates all entities each frames. Handles dead and reproducting cells, and empty trees.
 void entity_Updater() {
     int i;
     int deadN = 0;
     int reproductingN = 0;
-    
+
     int* deadEntities = (int*)malloc(sizeof(int)*entitiesN);
     if (deadEntities == NULL) { 
         printf("Failed to allocate deadEntities! in entity_Updater()\n");
         return;
     }
+
     int* reproductingEntities = (int*)malloc(sizeof(int) * entitiesN);
     if (reproductingEntities == NULL) {
         printf("Failed to allocate reproductingEntities! in entity_Updater()\n");
         return;
     }
-    
+
     #pragma omp parallel for
     for (i = 0; i < entitiesN; i++) {
-        //TEMPORARY METHOD. NEEDS TO BE SPLIT INTO MULTIPLE FUNCTIONS.
-        
-
         //Entity walking on terrainCell, applies proprieties.
         entities[i].passingCellIndex = (int)(entities[i].position.x / TERRAIN_CELL_SIZE) + (int)(entities[i].position.y / TERRAIN_CELL_SIZE) * WORLD_WIDTH;
-        LandProprieties Bonuses = create_Proprieties(1, 1, 1, 1, 1, 1, 1, 1, 1);
-
-        if (entities[i].passingCellIndex > 0 && entities[i].passingCellIndex < WORLD_WIDTH * WORLD_HEIGHT) {
-            Bonuses = TerrainCells[entities[i].passingCellIndex].group->proprieties;
-        }
+        LandProprieties Bonuses = calculate_Terrain_Bonuses(i);
 
         //Energy consumption, death
-        float consumptionSum = entities[i].genome.speed + entities[i].genome.acceleration + entities[i].genome.sightSize + entities[i].genome.reproductionSpeed - entities[i].genome.reproductionSpeed;
-        float consumptionDelta = (consumptionSum / GENOME_TRAITS) * ENTITIES_CONSUMPTION_MULTIPLIER;
-        //move it in other if to improve performance (slightly)
-        if (entities[i].prey == 1) consumptionDelta *= Bonuses.energyConsMultPrey;
-        else consumptionDelta *= Bonuses.energyConsMultPred;
-
-        if (entities[i].energyBalance > MIN_ENERGY_BALANCE) {
-            entities[i].energyBalance -= consumptionDelta * DELTA_TIME;
-        }
-        else {
+        float consumptionDelta = calculate_Energy_Consumption(i, Bonuses);
+        entities[i].energyBalance -= consumptionDelta * DELTA_TIME;
+        if (entities[i].energyBalance < MIN_ENERGY_BALANCE) {
             deadEntities[deadN] = i;
             deadN++;
         }
 
-        //Entity zone update
-        int xZone = (int)(entities[i].position.x / (2 * ENTITY_SIGHT_MULTIPLYER));
-        int yZone = (int)(entities[i].position.y / (2 * ENTITY_SIGHT_MULTIPLYER));
-        int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER));
-        entities[i].zoneIndex = index;
+        //Entity zone and position update
+        entities[i].zoneIndex = calculate_Updated_Zone(i);
+        update_Entity_Position(i, Bonuses);
 
-        //Close entities / plants arrays
-        int closePredatorsIndexes[MAX_NEIGHBOURS_SIZE];
-        int closePreysIndexes[MAX_NEIGHBOURS_SIZE];
-        int closeEntitiesIndexes[MAX_NEIGHBOURS_SIZE];
-        int closePlantIndexes[MAX_NEIGHBOURS_PLANT_SIZE];
-
-        //Close arrays infos
-        int closeEntitiesN = 0;
-        int closePredatorsN = 0;
-        int closePreysN = 0;
-        int closestPlantsN = 0;
-
-        //Closest entities info
-        int closestPreyIndex = NULL;
-        int closestPlantIndex = NULL;
-        float closestPlantDistance = INFINITY;
-        float closestPreyDistance = INFINITY;
-
-        find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes, &closeEntitiesN, &closePreysN, &closePredatorsN, &closestPreyIndex, &closestPreyDistance);
-        find_Nearby_Plants(i, closePlantIndexes, &closestPlantsN, &closestPlantIndex, &closestPlantDistance);
-        
-        //Preys
-        if (entities[i].prey == 1) {
-            //Escape from predators
-            if (closePredatorsN != 0) {
-                Vector2 direction = (Vector2){ 0,0 };
-                for (int j = 0; j < closePredatorsN; j++)
-                {
-                    direction.x -= entities[closePredatorsIndexes[j]].position.x - entities[i].position.x;
-                    direction.y -= entities[closePredatorsIndexes[j]].position.y - entities[i].position.y;
-                }
-                direction = Vector2Normalize(direction);
-                entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, 0.5*Bonuses.speedMultPrey*DELTA_TIME * entities[i].genome.speed));
-            }
-
-            //Move towards closest plant
-            if (closestPlantIndex!=NULL)
-            {
-                Vector2 direction = (Vector2){ 0,0 };
-                direction.x += trees[closestPlantIndex].worldPosition.x - entities[i].position.x;
-                direction.y += trees[closestPlantIndex].worldPosition.y - entities[i].position.y;
-                direction = Vector2Normalize(direction);
-                entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPrey * entities[i].genome.speed));
-
-                //Eat plant if still existing, destroy it otherwise
-                if (closestPlantDistance<TREE_ASSIMILATION_DISTANCE*TERRAIN_CELL_SIZE && trees[closestPlantIndex].treeEnergy > 0 && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
-                    trees[closestPlantIndex].treeEnergy -= 0.1 * DELTA_TIME;
-                    entities[i].energyBalance += trees[closestPlantIndex].energyValue * 0.1 * DELTA_TIME * Bonuses.energyPerPlantMult;
-                }
-                else if (trees[closestPlantIndex].treeEnergy <= 0) {
-                    trees[closestPlantIndex].treeEnergy = TREE_ENERGY;
-                    (trees[closestPlantIndex].assignedCell)->cellTree = NULL;
-                    int success = 0;
-                    while (success == 0) {
-                        int randomCell = GetRandomValue(0, terrainCellsN-1);
-                        if (TerrainCells[randomCell].cellTree != NULL) continue;
-                        float randomTreeChance = ((float)rand() / RAND_MAX) * (TerrainCells[randomCell].group->proprieties.plantDevelopMult);
-                        float inner_rand = (float)rand() / RAND_MAX;
-                        if (randomTreeChance > 0.9 && inner_rand > 0.7) {
-                            success = 1;
-                            TerrainCells[randomCell].cellTree = &trees[closestPlantIndex];
-                            trees[closestPlantIndex].assignedCell = &TerrainCells[randomCell];
-                            trees[closestPlantIndex].worldPosition = Vector2Scale(TerrainCells[randomCell].position, TERRAIN_CELL_SIZE);
-                            trees[closestPlantIndex].DEBUG = 1;
-                            
-                        }
-                    }
-                }
-            }
-
-        }
-        
-        //Predators
-        else {
-            if (closePreysN != 0) {
-                Vector2 direction = Vector2Subtract(entities[closestPreyIndex].position, entities[i].position);
-                direction = Vector2Normalize(direction);
-                entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPred * entities[i].genome.speed*2));
-                if (closestPreyDistance < PREY_ASSIMILATION_DISTANCE*TERRAIN_CELL_SIZE && entities[closestPreyIndex].energyBalance > MIN_ENERGY_BALANCE && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
-                    entities[closestPreyIndex].energyBalance -= 1 * DELTA_TIME;
-                    entities[i].energyBalance += 1 * DELTA_TIME;
-                }
-            }
-        }
-
-
-
-        entities[i].position = Vector2Add(entities[i].position, (Vector2) { GetRandomValue(-100, 100) / 75, GetRandomValue(-100, 100) / 75 });
-
+        //Reproduction conditions
         if (entities[i].energyBalance * Bonuses.reproductionSpeedMult >= MIN_REPRODUCTION_ENERGY) {
             reproductingEntities[reproductingN] = i;
             reproductingN++;
@@ -644,6 +565,7 @@ void entity_Updater() {
         entitiesN--;
     }
 
+
     //Reproduce
     for (int i = 0; i < reproductingN;i++) {
         if (entitiesN < MAX_ENTITIES) {
@@ -656,7 +578,6 @@ void entity_Updater() {
 
     free(deadEntities);
     free(reproductingEntities);
-    
 }
 
 int main(void)
@@ -749,16 +670,12 @@ int main(void)
 
     //INSTANTIATE ENTITIES
     instantiate_Entities_Start();
-    
     SetTargetFPS(60);
+
     while (!WindowShouldClose())
     {
-
         //Entities update
         entity_Updater();
-
-        //Trees update
-
 
         //Camera control
         if (IsKeyPressed(KEY_ONE)) zoomMode = 0;

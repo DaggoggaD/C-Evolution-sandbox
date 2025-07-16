@@ -132,12 +132,15 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FuncUtils.c" />
     <ClCompile Include="main.c" />
-    <ClCompile Include="oldMain.c" />
+    <ClCompile Include="Perlin.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependecies.h" />
+    <ClInclude Include="FuncUtils.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="Perlin.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

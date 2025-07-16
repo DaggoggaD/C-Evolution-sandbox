@@ -1,9 +1,10 @@
 #pragma once
+#include <math.h>
+#include <time.h>
 #include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h"
-#include <math.h>
-#include <time.h>
+#include "Perlin.h"
 
 //Forward initializations
 typedef struct s_LandGroup LandGroup;
@@ -12,8 +13,8 @@ typedef struct s_LandCell LandCell;
 //_______GLOBAL CONSTANTS_______
 //Terrain constants
 #define TERRAIN_CELL_SIZE 25
-#define WORLD_WIDTH 575
-#define WORLD_HEIGHT 575
+#define WORLD_WIDTH 675
+#define WORLD_HEIGHT 675
 
 //Start array size constants
 #define MAX_ENTITIES 10000

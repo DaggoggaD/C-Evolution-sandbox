@@ -21,7 +21,10 @@
     <ClCompile Include="main.c">
       <Filter>File di origine</Filter>
     </ClCompile>
-    <ClCompile Include="oldMain.c">
+    <ClCompile Include="Perlin.c">
+      <Filter>File di origine</Filter>
+    </ClCompile>
+    <ClCompile Include="FuncUtils.c">
       <Filter>File di origine</Filter>
     </ClCompile>
   </ItemGroup>
@@ -30,6 +33,12 @@
       <Filter>File di intestazione</Filter>
     </ClInclude>
     <ClInclude Include="main.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="Perlin.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="FuncUtils.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
   </ItemGroup>
