@@ -1,6 +1,7 @@
 #pragma once
 #include <math.h>
 #include <time.h>
+#include <string.h>
 #include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h"
@@ -19,7 +20,7 @@ typedef struct s_LandCell LandCell;
 //Start array size constants
 #define MAX_ENTITIES 10000
 #define STARTING_ENTITIES 1000
-#define MAX_NEIGHBOURS_SIZE 50
+#define MAX_NEIGHBOURS_SIZE 100
 #define MAX_NEIGHBOURS_PLANT_SIZE 100
 
 //Starting entities values

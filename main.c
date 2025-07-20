@@ -14,30 +14,29 @@ RenderTexture2D instantiate_Terrain() {
     TerrainCells = (LandCell*)malloc(sizeof(LandCell)*WORLD_WIDTH*WORLD_HEIGHT);
     if (TerrainCells == NULL) {
         printf("TerrainCells malloc failed! in instantiate_Terrain()\n");
-        return;
+        exit(-1);
     }
 
     trees = (Tree*)malloc(sizeof(Tree) * WORLD_WIDTH * WORLD_HEIGHT);
     if (trees == NULL) {
         printf("trees malloc failed! in instantiate_Terrain()\n");
-        return;
+        exit(-1);
     }
 
     BeginTextureMode(terrainTex);
     ClearBackground((Color) { 255, 255, 255, 255 });
-    srand(time(NULL));
-    SEED = GetTime();
+    srand((unsigned)time(NULL));
+    SEED = (int)GetTime();
 
     //if there are bugs, i changed x and y: before it was while x ... while y
     while (y < WORLD_HEIGHT) {
         while (x < WORLD_WIDTH) {
-            Color color;
             float jitterX = (float)(rand() % 100 - 50) / 20.0f;
             float jitterY = (float)(rand() % 100 - 50) / 20.0f;
-            float perl = (perlin2d(x+jitterX, y+jitterY, 0.003, 3) + perlin2d(x+1000, y+1000, 0.006, 1))/2;
+            float perl = (perlin2d(x+jitterX, y+jitterY, 0.003f, 3) + perlin2d(x+1000.0f, y+1000.0f, 0.006f, 1))/2.0f;
             
             LandCell currCell;
-            Vector2 pos = (Vector2){x,y};
+            Vector2 pos = (Vector2){(float)x,(float)y};
             currCell.position = pos;
             currCell.index = x + y * WORLD_WIDTH;
 
@@ -105,7 +104,7 @@ RenderTexture2D instantiate_Terrain() {
     if (resizedTreeS == NULL) {
         printf("trees realloc failed! in instantiate_Terrain()\n");
         free(trees);
-        return;
+        exit(-1);
     }
     trees = resizedTreeS;
 
@@ -117,8 +116,8 @@ RenderTexture2D instantiate_Terrain() {
 //For debug purposes, "custom" argument is passed. 0, random instantiation. 1, custom instantiation
 Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float acceleration, float sightSize, float reproductionSpeed, float agingSpeed, Vector2 customPosition) {
     Vector2 position;
-    position.x = GetRandomValue(0, WORLD_WIDTH * TERRAIN_CELL_SIZE);
-    position.y = GetRandomValue(0, WORLD_WIDTH * TERRAIN_CELL_SIZE);
+    position.x = (float)GetRandomValue(0, WORLD_WIDTH * TERRAIN_CELL_SIZE);
+    position.y = (float)GetRandomValue(0, WORLD_WIDTH * TERRAIN_CELL_SIZE);
 
     Entity currEntity;
     currEntity.consumedEnergyThisTurn = 0;
@@ -160,7 +159,7 @@ Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float
     int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)); //TODO: FIRST OF EVERY ROW HAS SAME AS LAST OF PREVIOUS
     currEntity.zoneIndex = index;
     currEntity.debug = 0;
-    currEntity.passingCellIndex = NULL;
+    currEntity.passingCellIndex = -1;
 
     return currEntity;
 }
@@ -232,6 +231,8 @@ void draw_Entities() {
         }
 
         DrawText(TextFormat("%i", entities[i].passingCellIndex), entities[i].position.x, entities[i].position.y, 1, DARKGRAY);
+        DrawText(TextFormat("%i", entities[i].zoneIndex), entities[i].position.x, entities[i].position.y-10, 1, RED);
+
         i++;
 
         /* Other momentary debug infos
@@ -297,24 +298,24 @@ void find_Nearby_Plants(int index, int* closePlants, int* closePlantN, int* clos
     int distance = INFINITY;
     
     int* close = (int*)malloc(sizeof(int) * 9);
-    if (close == NULL) return NULL;
+    if (close == NULL) return;
 
     int n = find_Close_Zones(entities[index].zoneIndex, close);
 
     
     while (i < treesN && neighboursIndex < MAX_NEIGHBOURS_PLANT_SIZE) {
-        if (is_In_Array(close, n, trees[i].zoneIndex)) {
-            distance = calc_Distance(entities[index].position, trees[i].worldPosition);
-            //Distance is squared. Could use Pow, but i think it's slower.
-            if (distance < (ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize) * (ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize)) {
-                closePlants[neighboursIndex] = i;
-                neighboursIndex++;
-                if (closest == NULL || distance < closestDistance) {
-                    closest = i;
-                    closestDistance = distance;
-                }
+        //if (is_In_Array(close, n, trees[i].zoneIndex)) { FIX THIS!!
+        distance = calc_Distance(entities[index].position, trees[i].worldPosition);
+        //Distance is squared. Could use Pow, but i think it's slower.
+        if (distance < (ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize) * (ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize)) {
+            closePlants[neighboursIndex] = i;
+            neighboursIndex++;
+            if (closest == NULL || distance < closestDistance) {
+                closest = i;
+                closestDistance = distance;
             }
         }
+        //}
 
         i++;
     }
@@ -329,27 +330,24 @@ void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* pr
     int neighboursIndex = 0;
     int preyIndex = 0;
     int predatorIndex = 0;
-    int count = 0;
-    float sightMultiplier = 0;
     
-    int closest = NULL;
-    int closestDistance = INFINITY;
-    int distance = INFINITY;
+    int closest = -1;
+    float closestDistance = INFINITY;
+    float distance = INFINITY;
 
     int *close = (int*)malloc(sizeof(int) * 9);
     if (close == NULL) return NULL;
 
-    int n = find_Close_Zones(entities[index].zoneIndex, close);    
-    while(i<entitiesN && neighboursIndex<MAX_NEIGHBOURS_SIZE){
+    float sightMultiplier = entities[index].prey ? 1.0f : PREDATORS_SIGHT_MULTIPLIER;
+    float sightRadius = ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize * sightMultiplier;
+    float sightRadiusSq = sightRadius * sightRadius;
 
-        if (entities[i].prey == 1) sightMultiplier = 1;
-        else sightMultiplier = PREDATORS_SIGHT_MULTIPLIER;
-        
-        if (is_In_Array(close, n, entities[i].zoneIndex) == 1) {
-            count++;
+    int n = find_Close_Zones(entities[index].zoneIndex, close);
+    while(i<entitiesN && neighboursIndex<MAX_NEIGHBOURS_SIZE){
+        if (entities[i].energyBalance >= MIN_ENERGY_BALANCE) { //is_In_Array(close, n, entities[i].zoneIndex) == 1 &&  FIX THIS!!
             distance = calc_Distance(entities[index].position, entities[i].position);
             
-            if (distance < (ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize * sightMultiplier) * (ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize* sightMultiplier) && i != index) {
+            if (distance < sightRadiusSq && i != index) {
                 
                 closeEntities[neighboursIndex] = i;
                 neighboursIndex++;
@@ -358,13 +356,14 @@ void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* pr
                 if (entities[i].prey == 0) {
                     predators[predatorIndex] = i;
                     predatorIndex++;
-                    continue;
                 }
-                preys[preyIndex] = i;
-                preyIndex++;
-                if (closest == NULL || distance < closestDistance) {
-                    closest = i;
-                    closestDistance = distance;
+                else {
+                    preys[preyIndex] = i;
+                    preyIndex++;
+                    if (closest == -1 || distance < closestDistance) {
+                        closest = i;
+                        closestDistance = distance;
+                    }
                 }
             }
         }
@@ -382,7 +381,7 @@ void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* pr
 //Returns bonuses to be applied to the cell, based on the type of terrain it's currently walking on.
 LandProprieties calculate_Terrain_Bonuses(int entityIndex) {
     LandProprieties Bonuses = create_Proprieties(1, 1, 1, 1, 1, 1, 1, 1, 1);
-    if (entities[entityIndex].passingCellIndex != NULL && entities[entityIndex].passingCellIndex > 0 && entities[entityIndex].passingCellIndex < WORLD_WIDTH * WORLD_HEIGHT) {
+    if (entities[entityIndex].passingCellIndex != -1 && entities[entityIndex].passingCellIndex > 0 && entities[entityIndex].passingCellIndex < WORLD_WIDTH * WORLD_HEIGHT) {
         Bonuses = TerrainCells[entities[entityIndex].passingCellIndex].group->proprieties;
     }
     return Bonuses;
@@ -421,8 +420,8 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
     int closestPlantsN = 0;
 
     //Closest entities info
-    int closestPreyIndex = NULL;
-    int closestPlantIndex = NULL;
+    int closestPreyIndex = -1;
+    int closestPlantIndex = -1;
     float closestPlantDistance = INFINITY;
     float closestPreyDistance = INFINITY;
 
@@ -449,6 +448,8 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
             Vector2 direction = (Vector2){ 0,0 };
             direction.x += trees[closestPlantIndex].worldPosition.x - entities[i].position.x;
             direction.y += trees[closestPlantIndex].worldPosition.y - entities[i].position.y;
+            DrawLineV(entities[i].position, trees[closestPlantIndex].worldPosition, BLUE);
+
             direction = Vector2Normalize(direction);
             entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPrey * entities[i].genome.speed));
 
@@ -484,10 +485,10 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
         }
 
     }
-
     //Predators
     else {
         if (closePreysN != 0) {
+            DrawLineV(entities[i].position, entities[closestPreyIndex].position, RED);
             Vector2 direction = Vector2Subtract(entities[closestPreyIndex].position, entities[i].position);
             direction = Vector2Normalize(direction);
             entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPred * entities[i].genome.speed * 2));
@@ -519,7 +520,6 @@ void entity_Updater() {
         return;
     }
 
-    #pragma omp parallel for
     for (i = 0; i < entitiesN; i++) {
         //Entity walking on terrainCell, applies proprieties.
         entities[i].passingCellIndex = (int)(entities[i].position.x / TERRAIN_CELL_SIZE) + (int)(entities[i].position.y / TERRAIN_CELL_SIZE) * WORLD_WIDTH;
@@ -544,8 +544,18 @@ void entity_Updater() {
         }
     }
 
+    //Reproduce
+    for (int K = 0; K < reproductingN;K++) {
+        if (entitiesN < MAX_ENTITIES) {
+            Entity newEntity = generate_Entity(1, entities[reproductingEntities[K]].prey, entities[reproductingEntities[K]].genome.speed, entities[reproductingEntities[K]].genome.turnSpeed, entities[reproductingEntities[K]].genome.acceleration, entities[reproductingEntities[K]].genome.sightSize, entities[reproductingEntities[K]].genome.reproductionSpeed, entities[reproductingEntities[K]].genome.agingSpeed, Vector2Add(entities[reproductingEntities[K]].position, (Vector2) { GetRandomValue(-10, 10), GetRandomValue(-10, 10) }));
+            entities[entitiesN] = newEntity;
+            entitiesN++;
+            entities[reproductingEntities[K]].energyBalance -= 20;
+        }
+    }
+
     //Delete entities
-    for (int i = 0; i < deadN - 1; i++) {
+    for (i = 0; i < deadN - 1; i++) {
         for (int j = i + 1; j < deadN; j++) {
             if (deadEntities[i] < deadEntities[j]) {
                 int temp = deadEntities[i];
@@ -556,7 +566,7 @@ void entity_Updater() {
     }
 
     //Finally deletes them
-    for (int i = 0; i < deadN; i++)
+    for (i = 0; i < deadN; i++)
     {
         for (int j = deadEntities[i]; j < entitiesN; j++)
         {
@@ -566,15 +576,7 @@ void entity_Updater() {
     }
 
 
-    //Reproduce
-    for (int i = 0; i < reproductingN;i++) {
-        if (entitiesN < MAX_ENTITIES) {
-            Entity newEntity = generate_Entity(1, entities[reproductingEntities[i]].prey, entities[reproductingEntities[i]].genome.speed, entities[reproductingEntities[i]].genome.turnSpeed, entities[reproductingEntities[i]].genome.acceleration, entities[reproductingEntities[i]].genome.sightSize, entities[reproductingEntities[i]].genome.reproductionSpeed, entities[reproductingEntities[i]].genome.agingSpeed, Vector2Add(entities[reproductingEntities[i]].position, (Vector2){GetRandomValue(-10,10), GetRandomValue(-10,10) }));
-            entities[entitiesN] = newEntity;
-            entitiesN++;
-            entities[reproductingEntities[i]].energyBalance -= 20;
-        }
-    }
+    
 
     free(deadEntities);
     free(reproductingEntities);
@@ -675,7 +677,7 @@ int main(void)
     while (!WindowShouldClose())
     {
         //Entities update
-        entity_Updater();
+
 
         //Camera control
         if (IsKeyPressed(KEY_ONE)) zoomMode = 0;
@@ -732,9 +734,10 @@ int main(void)
         BeginMode2D(camera);
 
         DrawTextureRec(terrainTexture.texture, (Rectangle) { 0, 0, terrainTexture.texture.width, -terrainTexture.texture.height }, (Vector2) { 0, 0 }, WHITE);
+
         draw_Trees();
         draw_Entities();
-
+        entity_Updater();
         EndMode2D();
         
         DrawText(TextFormat("FPS: %i", GetFPS()), 10, 10, 20, DARKGRAY);
