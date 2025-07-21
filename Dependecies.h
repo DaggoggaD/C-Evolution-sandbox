@@ -27,12 +27,14 @@ typedef struct s_LandCell LandCell;
 #define STARTING_REPRODUCTION_ADVANCMENT 0
 #define STARTING_AGE_ADVANCMENT 0
 #define ENTITY_SIZE 20
+#define ENTITY_MAX_SPEED 10
+#define ENTITY_SPEED_DECAY 0.995f
 
 //Entities consumption constatnts
 #define TREE_ASSIMILATION_DISTANCE 500
-#define PREY_ASSIMILATION_DISTANCE 500
+#define PREY_ASSIMILATION_DISTANCE 0
 #define ENTITY_SIGHT_MULTIPLYER (TERRAIN_CELL_SIZE*50)
-#define ENTITIES_CONSUMPTION_MULTIPLIER 0.05
+#define ENTITIES_CONSUMPTION_MULTIPLIER 5
 #define PREDATORS_SIGHT_MULTIPLIER 0.75
 
 //Entity energy constants
@@ -50,7 +52,7 @@ typedef struct s_LandCell LandCell;
 #define GENOME_TRAITS 6
 
 //Time constants
-#define DELTA_TIME 1
+#define DELTA_TIME 0.01
 
 
 //_______STRUCTS_______
@@ -95,8 +97,8 @@ typedef struct s_LandGroup {
 //Entity defining structs
 typedef struct s_genome {
 	float speed;
-	float turnSpeed; //change
-	float acceleration; //change
+	float velocity;
+	float acceleration;
 	float sightSize;
 	float reproductionSpeed;
 	float agingSpeed; 
@@ -105,14 +107,18 @@ typedef struct s_genome {
 
 typedef struct s_entity {
 	int debug;
-	int prey;
 	int zoneIndex;
 	int passingCellIndex;
+	
+	int prey;
+	
 	float consumedEnergyThisTurn;
 	float energyBalance;
 	float reproductionAdvancment;
 	float ageAdvancment;
+	
 	Vector2 position;
+	Vector2 velocity;
 	Genome genome;
 	Color color;
 } Entity;

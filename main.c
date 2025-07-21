@@ -114,7 +114,7 @@ RenderTexture2D instantiate_Terrain() {
 
 //Generates a single entity (both cell starting stats and genome). 
 //For debug purposes, "custom" argument is passed. 0, random instantiation. 1, custom instantiation
-Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float acceleration, float sightSize, float reproductionSpeed, float agingSpeed, Vector2 customPosition) {
+Entity generate_Entity(int custom, int prey, float speed, float velocity, float acceleration, float sightSize, float reproductionSpeed, float agingSpeed, Vector2 customPosition) {
     Vector2 position;
     position.x = (float)GetRandomValue(0, WORLD_WIDTH * TERRAIN_CELL_SIZE);
     position.y = (float)GetRandomValue(0, WORLD_WIDTH * TERRAIN_CELL_SIZE);
@@ -125,13 +125,14 @@ Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float
     currEntity.reproductionAdvancment = STARTING_REPRODUCTION_ADVANCMENT;
     currEntity.ageAdvancment = STARTING_AGE_ADVANCMENT;
     currEntity.color = BLACK;
+    currEntity.velocity = (Vector2){ 0,0 };
     Genome genome;
 
     //Allows for custom entity stats if custom == 1
     if (custom == 0) {
         currEntity.prey = GetRandomValue(0, 1);
         genome.speed = (float)rand() / RAND_MAX;
-        genome.turnSpeed = (float)rand() / RAND_MAX;
+        genome.velocity = (float)rand() / RAND_MAX;
         genome.acceleration = (float)rand() / RAND_MAX;
         genome.sightSize = (float)rand() / RAND_MAX;
         genome.reproductionSpeed = (float)rand() / RAND_MAX;
@@ -141,7 +142,7 @@ Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float
     else {
         currEntity.prey = prey;
         genome.speed = speed;
-        genome.turnSpeed = turnSpeed;
+        genome.velocity = velocity;
         genome.acceleration = acceleration;
         genome.sightSize = sightSize;
         genome.reproductionSpeed = reproductionSpeed;
@@ -151,7 +152,7 @@ Entity generate_Entity(int custom, int prey, float speed, float turnSpeed, float
     currEntity.genome = genome;
 
     //Assigns a custom color to each entity based on it's genome traits
-    float geneSum = genome.speed + genome.turnSpeed + genome.acceleration + genome.sightSize + genome.reproductionSpeed + genome.agingSpeed;
+    float geneSum = genome.speed + genome.velocity + genome.acceleration + genome.sightSize + genome.reproductionSpeed + genome.agingSpeed;
     currEntity.color = get_Unique_Color(geneSum, GENOME_TRAITS);
 
     int xZone = (int)floor(currEntity.position.x / (2 * ENTITY_SIGHT_MULTIPLYER));
@@ -231,7 +232,7 @@ void draw_Entities() {
         }
 
         DrawText(TextFormat("%i", entities[i].passingCellIndex), entities[i].position.x, entities[i].position.y, 1, DARKGRAY);
-        DrawText(TextFormat("%i", entities[i].zoneIndex), entities[i].position.x, entities[i].position.y-10, 1, RED);
+        DrawText(TextFormat("%f", entities[i].velocity.x), entities[i].position.x+5, entities[i].position.y-10, 1, RED);
 
         i++;
 
@@ -424,69 +425,43 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
     int closestPlantIndex = -1;
     float closestPlantDistance = INFINITY;
     float closestPreyDistance = INFINITY;
+    float maxVelocity = ENTITY_MAX_SPEED * Bonuses.speedMultPred * entities[i].genome.velocity;
 
     find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes, &closeEntitiesN, &closePreysN, &closePredatorsN, &closestPreyIndex, &closestPreyDistance);
     find_Nearby_Plants(i, closePlantIndexes, &closestPlantsN, &closestPlantIndex, &closestPlantDistance);
 
-    //Preys
+    //TO BE LATER IMPLEMENTED IN SEPARATE FUNCTION!
     if (entities[i].prey == 1) {
-        //Escape from predators
         if (closePredatorsN != 0) {
-            Vector2 direction = (Vector2){ 0,0 };
-            for (int j = 0; j < closePredatorsN; j++)
-            {
-                direction.x -= entities[closePredatorsIndexes[j]].position.x - entities[i].position.x;
-                direction.y -= entities[closePredatorsIndexes[j]].position.y - entities[i].position.y;
+            float maxDistance = entities[i].genome.sightSize * ENTITY_SIGHT_MULTIPLYER;
+            float maxDistanceSquared = maxDistance * maxDistance;
+            Vector2 velocityChange = (Vector2){ 0,0 };
+
+            for (int j = 0; j < closePredatorsN; j++) {
+                float cDist = calc_Distance(entities[i].position, entities[closePredatorsIndexes[j]].position);
+                float velocityMultiplier = maxVelocity - maxVelocity * sqrtf(cDist/maxDistance);
+                Vector2 direction = (Vector2){ -entities[closePredatorsIndexes[j]].position.x + entities[i].position.x, - entities[closePredatorsIndexes[j]].position.y + entities[i].position.y };
+                direction = Vector2Normalize(direction);
+                
+                velocityChange.x += fabs(velocityMultiplier) * direction.x * DELTA_TIME;
+                velocityChange.y += fabs(velocityMultiplier) * direction.y * DELTA_TIME;
+
             }
-            direction = Vector2Normalize(direction);
-            entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, 1 * Bonuses.speedMultPrey * DELTA_TIME * entities[i].genome.speed));
+
+            if (fabs(entities[i].velocity.x) < ENTITY_MAX_SPEED) entities[i].velocity.x += velocityChange.x;
+            if (fabs(entities[i].velocity.y) < ENTITY_MAX_SPEED) entities[i].velocity.y += velocityChange.y;
         }
+        
+        entities[i].velocity.x = entities[i].velocity.x * ENTITY_SPEED_DECAY;
+        entities[i].velocity.y = entities[i].velocity.y * ENTITY_SPEED_DECAY;
 
-        //Move towards closest plant
-        if (closestPlantIndex != NULL)
-        {
-            Vector2 direction = (Vector2){ 0,0 };
-            direction.x += trees[closestPlantIndex].worldPosition.x - entities[i].position.x;
-            direction.y += trees[closestPlantIndex].worldPosition.y - entities[i].position.y;
-            DrawLineV(entities[i].position, trees[closestPlantIndex].worldPosition, BLUE);
 
-            direction = Vector2Normalize(direction);
-            entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPrey * entities[i].genome.speed));
-
-            //Eat plant if still existing, destroy it otherwise
-            if (closestPlantDistance < TREE_ASSIMILATION_DISTANCE * TERRAIN_CELL_SIZE && trees[closestPlantIndex].treeEnergy > 0 && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
-                trees[closestPlantIndex].treeEnergy -= 0.1 * DELTA_TIME;
-                entities[i].energyBalance += trees[closestPlantIndex].energyValue * 0.1 * DELTA_TIME * Bonuses.energyPerPlantMult;
-            }
-            else if (trees[closestPlantIndex].treeEnergy <= 0) {
-                trees[closestPlantIndex].treeEnergy = TREE_ENERGY;
-                (trees[closestPlantIndex].assignedCell)->cellTree = NULL;
-                int success = 0;
-                while (success == 0) {
-                    int randomCell = GetRandomValue(0, terrainCellsN - 1);
-                    if (TerrainCells[randomCell].cellTree != NULL) continue;
-                    float randomTreeChance = ((float)rand() / RAND_MAX) * (TerrainCells[randomCell].group->proprieties.plantDevelopMult);
-                    float inner_rand = (float)rand() / RAND_MAX;
-                    if (randomTreeChance > 0.9 && inner_rand > 0.7) {
-                        success = 1;
-                        TerrainCells[randomCell].cellTree = &trees[closestPlantIndex];
-                        trees[closestPlantIndex].assignedCell = &TerrainCells[randomCell];
-                        trees[closestPlantIndex].worldPosition = Vector2Scale(TerrainCells[randomCell].position, TERRAIN_CELL_SIZE);
-                        trees[closestPlantIndex].DEBUG = 1;
-
-                        int xZone = (int)floor(trees[closestPlantIndex].worldPosition.x / (2 * ENTITY_SIGHT_MULTIPLYER));
-                        int yZone = (int)floor(trees[closestPlantIndex].worldPosition.y / (2 * ENTITY_SIGHT_MULTIPLYER));
-                        int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)); //TODO: FIRST OF EVERY ROW HAS SAME AS LAST OF PREVIOUS
-                        trees[closestPlantIndex].zoneIndex = index;
-
-                    }
-                }
-            }
-        }
-
+        entities[i].position = Vector2Add(entities[i].position, Vector2Scale(entities[i].velocity, DELTA_TIME));
+    
     }
-    //Predators
-    else {
+    
+    /*
+    if(entities[i].prey == 0) {
         if (closePreysN != 0) {
             DrawLineV(entities[i].position, entities[closestPreyIndex].position, RED);
             Vector2 direction = Vector2Subtract(entities[closestPreyIndex].position, entities[i].position);
@@ -497,7 +472,7 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
                 entities[i].energyBalance += 1 * DELTA_TIME;
             }
         }
-    }
+    }*/
 
 
 }
@@ -547,7 +522,7 @@ void entity_Updater() {
     //Reproduce
     for (int K = 0; K < reproductingN;K++) {
         if (entitiesN < MAX_ENTITIES) {
-            Entity newEntity = generate_Entity(1, entities[reproductingEntities[K]].prey, entities[reproductingEntities[K]].genome.speed, entities[reproductingEntities[K]].genome.turnSpeed, entities[reproductingEntities[K]].genome.acceleration, entities[reproductingEntities[K]].genome.sightSize, entities[reproductingEntities[K]].genome.reproductionSpeed, entities[reproductingEntities[K]].genome.agingSpeed, Vector2Add(entities[reproductingEntities[K]].position, (Vector2) { GetRandomValue(-10, 10), GetRandomValue(-10, 10) }));
+            Entity newEntity = generate_Entity(1, entities[reproductingEntities[K]].prey, entities[reproductingEntities[K]].genome.speed, entities[reproductingEntities[K]].genome.velocity, entities[reproductingEntities[K]].genome.acceleration, entities[reproductingEntities[K]].genome.sightSize, entities[reproductingEntities[K]].genome.reproductionSpeed, entities[reproductingEntities[K]].genome.agingSpeed, Vector2Add(entities[reproductingEntities[K]].position, (Vector2) { GetRandomValue(-10, 10), GetRandomValue(-10, 10) }));
             entities[entitiesN] = newEntity;
             entitiesN++;
             entities[reproductingEntities[K]].energyBalance -= 20;
