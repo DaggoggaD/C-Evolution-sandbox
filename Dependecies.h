@@ -22,19 +22,21 @@ typedef struct s_LandCell LandCell;
 #define STARTING_ENTITIES 1000
 #define MAX_NEIGHBOURS_SIZE 100
 #define MAX_NEIGHBOURS_PLANT_SIZE 100
+#define PLANT_OVER_PREDATOR_MULT 1;
 
 //Starting entities values
 #define STARTING_REPRODUCTION_ADVANCMENT 0
 #define STARTING_AGE_ADVANCMENT 0
 #define ENTITY_SIZE 20
 #define ENTITY_MAX_SPEED 10
-#define ENTITY_SPEED_DECAY 0.995f
+#define ENTITY_MAX_ACCELERATION 0.25
+#define ENTITY_SPEED_DECAY 0.99f
 
 //Entities consumption constatnts
 #define TREE_ASSIMILATION_DISTANCE 500
-#define PREY_ASSIMILATION_DISTANCE 0
+#define PREY_ASSIMILATION_DISTANCE 500
 #define ENTITY_SIGHT_MULTIPLYER (TERRAIN_CELL_SIZE*50)
-#define ENTITIES_CONSUMPTION_MULTIPLIER 5
+#define ENTITIES_CONSUMPTION_MULTIPLIER 1
 #define PREDATORS_SIGHT_MULTIPLIER 0.75
 
 //Entity energy constants
@@ -52,7 +54,7 @@ typedef struct s_LandCell LandCell;
 #define GENOME_TRAITS 6
 
 //Time constants
-#define DELTA_TIME 0.01
+#define DELTA_TIME 0.05
 
 
 //_______STRUCTS_______

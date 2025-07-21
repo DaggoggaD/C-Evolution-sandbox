@@ -426,32 +426,49 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
     float closestPlantDistance = INFINITY;
     float closestPreyDistance = INFINITY;
     float maxVelocity = ENTITY_MAX_SPEED * Bonuses.speedMultPred * entities[i].genome.velocity;
+    float maxAcceleration = ENTITY_MAX_ACCELERATION * entities[i].genome.acceleration;
 
     find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes, &closeEntitiesN, &closePreysN, &closePredatorsN, &closestPreyIndex, &closestPreyDistance);
     find_Nearby_Plants(i, closePlantIndexes, &closestPlantsN, &closestPlantIndex, &closestPlantDistance);
 
     //TO BE LATER IMPLEMENTED IN SEPARATE FUNCTION!
     if (entities[i].prey == 1) {
-        if (closePredatorsN != 0) {
-            float maxDistance = entities[i].genome.sightSize * ENTITY_SIGHT_MULTIPLYER;
-            float maxDistanceSquared = maxDistance * maxDistance;
-            Vector2 velocityChange = (Vector2){ 0,0 };
+        Vector2 velocityChange = (Vector2){ 0,0 };
+        Vector2 direction = (Vector2){ 0,0 };
+        float maxDistance = entities[i].genome.sightSize * ENTITY_SIGHT_MULTIPLYER;
+        float maxDistanceSquared = maxDistance * maxDistance;
+        float minDist = maxDistanceSquared;
 
+        //escapes from closest predators. MOVE MINIMUM DISTANCE INTO FIND_NEARBY_ENTITIES!!
+        if (closePredatorsN != 0) {
             for (int j = 0; j < closePredatorsN; j++) {
                 float cDist = calc_Distance(entities[i].position, entities[closePredatorsIndexes[j]].position);
-                float velocityMultiplier = maxVelocity - maxVelocity * sqrtf(cDist/maxDistance);
-                Vector2 direction = (Vector2){ -entities[closePredatorsIndexes[j]].position.x + entities[i].position.x, - entities[closePredatorsIndexes[j]].position.y + entities[i].position.y };
-                direction = Vector2Normalize(direction);
-                
-                velocityChange.x += fabs(velocityMultiplier) * direction.x * DELTA_TIME;
-                velocityChange.y += fabs(velocityMultiplier) * direction.y * DELTA_TIME;
-
+                if (cDist < minDist) {
+                    minDist = cDist;
+                    direction.x = -entities[closePredatorsIndexes[j]].position.x + entities[i].position.x;
+                    direction.y = -entities[closePredatorsIndexes[j]].position.y + entities[i].position.y;
+                }
             }
 
-            if (fabs(entities[i].velocity.x) < ENTITY_MAX_SPEED) entities[i].velocity.x += velocityChange.x;
-            if (fabs(entities[i].velocity.y) < ENTITY_MAX_SPEED) entities[i].velocity.y += velocityChange.y;
+            float accelerationMultiplier = maxAcceleration - maxAcceleration * sqrtf(minDist / maxDistance);
+            direction = Vector2Normalize(direction);
+            velocityChange.x += fabs(accelerationMultiplier) * direction.x * DELTA_TIME;
+            velocityChange.y += fabs(accelerationMultiplier) * direction.y * DELTA_TIME;
+        }
+
+        if (closestPlantsN != 0) {
+            direction = (Vector2){ trees[closestPlantIndex].worldPosition.x - entities[i].position.x, trees[closestPlantIndex].worldPosition.y - entities[i].position.y };
+            direction = Vector2Normalize(direction);
+            
+            //entity decides if it should go towards plant or escape enemy
+            if (closePredatorsN == 0 || minDist > closestPlantDistance) {
+                velocityChange.x += maxVelocity * direction.x * DELTA_TIME * PLANT_OVER_PREDATOR_MULT;
+                velocityChange.y += maxVelocity * direction.y * DELTA_TIME * PLANT_OVER_PREDATOR_MULT;
+            }
         }
         
+        if (fabs(entities[i].velocity.x) < ENTITY_MAX_SPEED) entities[i].velocity.x += velocityChange.x;
+        if (fabs(entities[i].velocity.y) < ENTITY_MAX_SPEED) entities[i].velocity.y += velocityChange.y;
         entities[i].velocity.x = entities[i].velocity.x * ENTITY_SPEED_DECAY;
         entities[i].velocity.y = entities[i].velocity.y * ENTITY_SPEED_DECAY;
 
