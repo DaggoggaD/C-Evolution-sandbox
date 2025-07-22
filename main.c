@@ -290,7 +290,7 @@ int find_Close_Zones(int zone, int* out) {
 }
 
 //Find plants within ENTITY_SIGHT_MULTIPLYER
-void find_Nearby_Plants(int index, int* closePlants, int* closePlantN, int* closestPlant, float *plantDistanceClosest) {
+CloseInfo find_Nearby_Plants(int index, int* closePlants) {
     int i = 0;
     int neighboursIndex = 0;
 
@@ -320,24 +320,30 @@ void find_Nearby_Plants(int index, int* closePlants, int* closePlantN, int* clos
 
         i++;
     }
-    *closePlantN = neighboursIndex;
-    *closestPlant = closest;
-    *plantDistanceClosest = closestDistance;
+
+    CloseInfo closeInfo;
+
+    closeInfo.closePlantsN = neighboursIndex;
+    closeInfo.closestPlantIndex = closest;
+    closeInfo.closestPlantDistance = closestDistance;
+    return closeInfo;
 }
 
 //Find entities within ENTITY_SIGHT_MULTIPLYER, returns ScanInfo.
-void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* preys, int* closeN, int* closePraysN, int* closePredatorsN, int* closestPrey, float *closestPrayDistance) {
+CloseInfo find_Nearby_Entities(int index, int* closeEntities, int* predators, int* preys) {
     int i = 0; 
     int neighboursIndex = 0;
     int preyIndex = 0;
     int predatorIndex = 0;
     
-    int closest = -1;
-    float closestDistance = INFINITY;
+    int closestPreyIndex = -1;
+    int closestPredatorIndex = -1;
+    float closestPreyDst = INFINITY;
+    float closestPredatorDst = INFINITY;
     float distance = INFINITY;
 
     int *close = (int*)malloc(sizeof(int) * 9);
-    if (close == NULL) return NULL;
+    if (close == NULL) exit(1);
 
     float sightMultiplier = entities[index].prey ? 1.0f : PREDATORS_SIGHT_MULTIPLIER;
     float sightRadius = ENTITY_SIGHT_MULTIPLYER * entities[index].genome.sightSize * sightMultiplier;
@@ -357,13 +363,17 @@ void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* pr
                 if (entities[i].prey == 0) {
                     predators[predatorIndex] = i;
                     predatorIndex++;
+                    if (closestPredatorIndex == -1 || distance < closestPredatorDst) {
+                        closestPredatorIndex = i;
+                        closestPredatorDst = distance;
+                    }
                 }
                 else {
                     preys[preyIndex] = i;
                     preyIndex++;
-                    if (closest == -1 || distance < closestDistance) {
-                        closest = i;
-                        closestDistance = distance;
+                    if (closestPreyIndex == -1 || distance < closestPreyDst) {
+                        closestPreyIndex = i;
+                        closestPreyDst = distance;
                     }
                 }
             }
@@ -372,11 +382,18 @@ void find_Nearby_Entities(int index, int* closeEntities, int* predators, int* pr
         i++;
     }
 
-    *closeN = neighboursIndex;
-    *closePraysN = preyIndex;
-    *closePredatorsN = predatorIndex;
-    *closestPrey = closest;
-    *closestPrayDistance = closestDistance;
+    CloseInfo closeInfo;
+
+    closeInfo.closeEntitiesN = neighboursIndex;
+    closeInfo.closePreysN = preyIndex;
+    closeInfo.closePredatorsN = predatorIndex;
+
+    closeInfo.closestPreyIndex = closestPreyIndex;
+    closeInfo.closestPredatorIndex = closestPredatorIndex;
+    closeInfo.closestPreyDistance = closestPreyDst;
+    closeInfo.closestPredatorDistance = closestPredatorDst;
+
+    return closeInfo;
 }
 
 //Returns bonuses to be applied to the cell, based on the type of terrain it's currently walking on.
@@ -414,22 +431,26 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
     int closeEntitiesIndexes[MAX_NEIGHBOURS_SIZE];
     int closePlantIndexes[MAX_NEIGHBOURS_PLANT_SIZE];
 
-    //Close arrays infos
-    int closeEntitiesN = 0;
-    int closePredatorsN = 0;
-    int closePreysN = 0;
-    int closestPlantsN = 0;
-
-    //Closest entities info
-    int closestPreyIndex = -1;
-    int closestPlantIndex = -1;
-    float closestPlantDistance = INFINITY;
-    float closestPreyDistance = INFINITY;
     float maxVelocity = ENTITY_MAX_SPEED * Bonuses.speedMultPred * entities[i].genome.velocity;
     float maxAcceleration = ENTITY_MAX_ACCELERATION * entities[i].genome.acceleration;
 
-    find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes, &closeEntitiesN, &closePreysN, &closePredatorsN, &closestPreyIndex, &closestPreyDistance);
-    find_Nearby_Plants(i, closePlantIndexes, &closestPlantsN, &closestPlantIndex, &closestPlantDistance);
+    CloseInfo closeEntitiesInfo = find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes);
+    CloseInfo closePlantsInfo = find_Nearby_Plants(i, closePlantIndexes);
+
+    //Unwrap closeinfo
+    int closeEntitiesN = closeEntitiesInfo.closeEntitiesN;
+    int closePredatorsN = closeEntitiesInfo.closePredatorsN;
+    int closePreysN = closeEntitiesInfo.closePreysN;
+    int closestPlantsN = closePlantsInfo.closePlantsN;
+
+    int closestPreyIndex = closeEntitiesInfo.closestPreyIndex;
+    int closestPredatorIndex = closeEntitiesInfo.closestPredatorIndex;
+    int closestPlantIndex = closePlantsInfo.closestPlantIndex;
+
+    float closestPreyDistance = closeEntitiesInfo.closestPreyDistance;
+    float closestPredatorDistance = closeEntitiesInfo.closestPredatorDistance;
+    float closestPlantDistance = closePlantsInfo.closestPlantDistance;
+
 
     //TO BE LATER IMPLEMENTED IN SEPARATE FUNCTION!
     if (entities[i].prey == 1) {
@@ -441,16 +462,11 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
 
         //escapes from closest predators. MOVE MINIMUM DISTANCE INTO FIND_NEARBY_ENTITIES!!
         if (closePredatorsN != 0) {
-            for (int j = 0; j < closePredatorsN; j++) {
-                float cDist = calc_Distance(entities[i].position, entities[closePredatorsIndexes[j]].position);
-                if (cDist < minDist) {
-                    minDist = cDist;
-                    direction.x = -entities[closePredatorsIndexes[j]].position.x + entities[i].position.x;
-                    direction.y = -entities[closePredatorsIndexes[j]].position.y + entities[i].position.y;
-                }
-            }
-
+            minDist = closestPredatorDistance;
+            direction.x = -entities[closestPredatorIndex].position.x + entities[i].position.x;
+            direction.y = -entities[closestPredatorIndex].position.y + entities[i].position.y;
             float accelerationMultiplier = maxAcceleration - maxAcceleration * sqrtf(minDist / maxDistance);
+
             direction = Vector2Normalize(direction);
             velocityChange.x += fabs(accelerationMultiplier) * direction.x * DELTA_TIME;
             velocityChange.y += fabs(accelerationMultiplier) * direction.y * DELTA_TIME;

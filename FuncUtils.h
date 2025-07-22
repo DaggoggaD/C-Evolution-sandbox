@@ -9,3 +9,21 @@ float calc_Distance(Vector2 source, Vector2 destination);
 
 //Checks if element is in array.
 int is_In_Array(int* arr, int lenght, int find);
+
+typedef struct s_CloseInfo {
+	//entities
+	int closeEntitiesN;
+	int closePreysN;
+	int closePredatorsN;
+
+	int closestPreyIndex;
+	int closestPredatorIndex;
+	float closestPreyDistance;
+	float closestPredatorDistance;
+
+	//plants
+	int closePlantsN;
+	int closestPlantIndex;
+
+	float closestPlantDistance;
+} CloseInfo;
