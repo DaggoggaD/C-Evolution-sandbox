@@ -3,7 +3,6 @@
 #include "Dependecies.h"
 #include "main.h"
 
-
 //Creates the whole terrain texture, speeding up Draw calls.
 //Initializes TerrainCells and trees array. Assigns proprieties to each tile.
 RenderTexture2D instantiate_Terrain() {
@@ -218,22 +217,29 @@ void draw_Entities() {
             char ypos[10];
             _itoa(entities[i].position.y, ypos, 10);
             
-            char energy[10];
-            _itoa(entities[i].energyBalance, energy, 10);
+            
             
 
             DrawText(xpos, entities[i].position.x-20, entities[i].position.y, 10, BLACK);
             DrawText(ypos, entities[i].position.x+10, entities[i].position.y, 10, BLACK);
-            DrawText(energy, entities[i].position.x, entities[i].position.y -10, 10, BLACK);
             float sightMult = 0;
             if (entities[i].prey == 1) sightMult = 1;
             else sightMult = 0.75;
+
+
             DrawCircleLinesV(entities[i].position, entities[i].genome.sightSize*ENTITY_SIGHT_MULTIPLYER*sightMult, YELLOW);
+            
+            if (entities[i].prey == 1) {
+                DrawCircleLinesV(entities[i].position, PREY_ASSIMILATION_DISTANCE, RED);
+                DrawCircleLinesV(entities[i].position, entities[i].genome.sightSize * ENTITY_PREDATOR_DANGER_ZONE * sightMult, ORANGE);
+            }
         }
 
-        DrawText(TextFormat("%i", entities[i].passingCellIndex), entities[i].position.x, entities[i].position.y, 1, DARKGRAY);
-        DrawText(TextFormat("%f", entities[i].velocity.x), entities[i].position.x+5, entities[i].position.y-10, 1, RED);
+        char energy[10];
+        _itoa(entities[i].energyBalance, energy, 10);
 
+        DrawText(TextFormat(" Velocity:\n %.2f %.2f", entities[i].velocity.x, entities[i].velocity.y), entities[i].position.x-25, entities[i].position.y-15, 1, BLACK);
+        DrawText(energy, entities[i].position.x-2, entities[i].position.y + 10, 1, BLACK);
         i++;
 
         /* Other momentary debug infos
@@ -423,6 +429,110 @@ int calculate_Updated_Zone(int entityIndex) {
     return index;
 }
 
+//Calculates change in velocity to move towards plants and escape predators. Also handles preys eating.
+Vector2 calculate_Prey_Velocity(int i, LandProprieties Bonuses, int closePredatorsN, int closestPlantsN, float closestPredatorDistance, float closestPlantDistance, int closestPredatorIndex, int closestPlantIndex) {
+    float maxDistance = entities[i].genome.sightSize * ENTITY_SIGHT_MULTIPLYER;
+    float maxDistanceSquared = maxDistance * maxDistance;
+
+    float maxAcceleration = ENTITY_MAX_ACCELERATION * entities[i].genome.acceleration;
+
+    float dangerZone = entities[i].genome.sightSize * ENTITY_PREDATOR_DANGER_ZONE;
+    float dangerZoneSquared = dangerZone * dangerZone;
+    
+    Vector2 velocityChange = (Vector2){ 0,0 };
+    Vector2 direction = (Vector2){ 0,0 };
+    float minDist = maxDistanceSquared;
+
+    //escapes from closest predators. MOVE MINIMUM DISTANCE INTO FIND_NEARBY_ENTITIES!!
+    if (closePredatorsN != 0) {
+        minDist = closestPredatorDistance;
+        direction.x = -entities[closestPredatorIndex].position.x + entities[i].position.x;
+        direction.y = -entities[closestPredatorIndex].position.y + entities[i].position.y;
+        float accelerationMultiplier = maxAcceleration - maxAcceleration * sqrtf(minDist / maxDistanceSquared);
+
+        direction = Vector2Normalize(direction);
+        if (minDist < dangerZoneSquared) {
+            velocityChange.x += fabs(accelerationMultiplier) * direction.x * DELTA_TIME;
+            velocityChange.y += fabs(accelerationMultiplier) * direction.y * DELTA_TIME;
+        }
+    }
+
+    if (closestPlantsN != 0) {
+        direction = (Vector2){ trees[closestPlantIndex].worldPosition.x - entities[i].position.x, trees[closestPlantIndex].worldPosition.y - entities[i].position.y };
+        direction = Vector2Normalize(direction);
+
+        //entity decides if it should go towards plant or escape enemy
+        if (closePredatorsN == 0 || minDist > dangerZoneSquared) {
+            velocityChange.x += maxAcceleration * direction.x * DELTA_TIME * PLANT_OVER_PREDATOR_MULT;
+            velocityChange.y += maxAcceleration * direction.y * DELTA_TIME * PLANT_OVER_PREDATOR_MULT;
+        }
+
+        //Eat plant
+        if (closestPlantDistance < TREE_ASSIMILATION_DISTANCE * TERRAIN_CELL_SIZE && trees[closestPlantIndex].treeEnergy > 0 && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
+            trees[closestPlantIndex].treeEnergy -= 1 * DELTA_TIME;
+            entities[i].energyBalance += trees[closestPlantIndex].energyValue * 1.25 * DELTA_TIME * Bonuses.energyPerPlantMult;
+
+        }
+        else if (trees[closestPlantIndex].treeEnergy <= 0) {
+            trees[closestPlantIndex].treeEnergy = TREE_ENERGY;
+            (trees[closestPlantIndex].assignedCell)->cellTree = NULL;
+            int success = 0;
+            while (success == 0) {
+                int randomCell = GetRandomValue(0, terrainCellsN - 1);
+                if (TerrainCells[randomCell].cellTree != NULL) continue;
+                float randomTreeChance = ((float)rand() / RAND_MAX) * (TerrainCells[randomCell].group->proprieties.plantDevelopMult);
+                float inner_rand = (float)rand() / RAND_MAX;
+                if (randomTreeChance > 0.9 && inner_rand > 0.7) {
+                    success = 1;
+                    TerrainCells[randomCell].cellTree = &trees[closestPlantIndex];
+                    trees[closestPlantIndex].assignedCell = &TerrainCells[randomCell];
+                    trees[closestPlantIndex].worldPosition = Vector2Scale(TerrainCells[randomCell].position, TERRAIN_CELL_SIZE);
+                    trees[closestPlantIndex].DEBUG = 1;
+
+                    int xZone = (int)floor(trees[closestPlantIndex].worldPosition.x / (2 * ENTITY_SIGHT_MULTIPLYER));
+                    int yZone = (int)floor(trees[closestPlantIndex].worldPosition.y / (2 * ENTITY_SIGHT_MULTIPLYER));
+                    int index = xZone + yZone * (int)((WORLD_WIDTH * TERRAIN_CELL_SIZE) / (2 * ENTITY_SIGHT_MULTIPLYER)); //TODO: FIRST OF EVERY ROW HAS SAME AS LAST OF PREVIOUS
+                    trees[closestPlantIndex].zoneIndex = index;
+
+                }
+            }
+        }
+
+    }
+    return velocityChange;
+}
+
+//Calculates change in velocity to move towards preys. Also handles predators eating.
+Vector2 calculate_Predator_Velocity(int i, LandProprieties Bonuses, int closePreysN, int closestPreyIndex, float closestPreyDistance) {
+    float maxDistance = entities[i].genome.sightSize * ENTITY_SIGHT_MULTIPLYER;
+    float maxDistanceSquared = maxDistance * maxDistance;
+
+    float maxVelocity = ENTITY_MAX_SPEED * Bonuses.speedMultPred * entities[i].genome.velocity;
+    maxVelocity *= (entities[i].prey == 0) ? PREDATORS_SPEED_MULT : 1;
+
+    float maxAcceleration = ENTITY_MAX_ACCELERATION * entities[i].genome.acceleration;
+
+    Vector2 velocityChange = (Vector2){ 0,0 };
+    Vector2 direction = (Vector2){ 0,0 };
+    float minDist = maxDistanceSquared;
+
+    if (closePreysN != 0) {
+        minDist = closestPreyDistance;
+        direction.x = entities[closestPreyIndex].position.x - entities[i].position.x;
+        direction.y = entities[closestPreyIndex].position.y - entities[i].position.y;
+        float accelerationMultiplier = maxAcceleration - maxAcceleration * sqrtf(minDist / maxDistanceSquared);
+
+        direction = Vector2Normalize(direction);
+        velocityChange.x += maxAcceleration * direction.x * DELTA_TIME;
+        velocityChange.y += maxAcceleration * direction.y * DELTA_TIME;
+        if (closestPreyDistance < PREY_ASSIMILATION_DISTANCE * PREY_ASSIMILATION_DISTANCE && entities[closestPreyIndex].energyBalance > MIN_ENERGY_BALANCE && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
+            entities[closestPreyIndex].energyBalance -= 1 * DELTA_TIME;
+            entities[i].energyBalance += 1.5 * DELTA_TIME;
+        }
+    }
+    return velocityChange;
+}
+
 //Updates entity position, going towards closest plant/entity.
 void update_Entity_Position(int i, LandProprieties Bonuses) {
     //Close entities / plants arrays
@@ -431,83 +541,26 @@ void update_Entity_Position(int i, LandProprieties Bonuses) {
     int closeEntitiesIndexes[MAX_NEIGHBOURS_SIZE];
     int closePlantIndexes[MAX_NEIGHBOURS_PLANT_SIZE];
 
-    float maxVelocity = ENTITY_MAX_SPEED * Bonuses.speedMultPred * entities[i].genome.velocity;
-    float maxAcceleration = ENTITY_MAX_ACCELERATION * entities[i].genome.acceleration;
-
     CloseInfo closeEntitiesInfo = find_Nearby_Entities(i, closeEntitiesIndexes, closePredatorsIndexes, closePreysIndexes);
     CloseInfo closePlantsInfo = find_Nearby_Plants(i, closePlantIndexes);
+    
+    float maxVelocity = ENTITY_MAX_SPEED * Bonuses.speedMultPred * entities[i].genome.velocity;
+    maxVelocity *= (entities[i].prey == 0) ? PREDATORS_SPEED_MULT : 1;
 
-    //Unwrap closeinfo
-    int closeEntitiesN = closeEntitiesInfo.closeEntitiesN;
-    int closePredatorsN = closeEntitiesInfo.closePredatorsN;
-    int closePreysN = closeEntitiesInfo.closePreysN;
-    int closestPlantsN = closePlantsInfo.closePlantsN;
+    Vector2 velocityChange = (Vector2){ 0,0 };
 
-    int closestPreyIndex = closeEntitiesInfo.closestPreyIndex;
-    int closestPredatorIndex = closeEntitiesInfo.closestPredatorIndex;
-    int closestPlantIndex = closePlantsInfo.closestPlantIndex;
-
-    float closestPreyDistance = closeEntitiesInfo.closestPreyDistance;
-    float closestPredatorDistance = closeEntitiesInfo.closestPredatorDistance;
-    float closestPlantDistance = closePlantsInfo.closestPlantDistance;
-
-
-    //TO BE LATER IMPLEMENTED IN SEPARATE FUNCTION!
     if (entities[i].prey == 1) {
-        Vector2 velocityChange = (Vector2){ 0,0 };
-        Vector2 direction = (Vector2){ 0,0 };
-        float maxDistance = entities[i].genome.sightSize * ENTITY_SIGHT_MULTIPLYER;
-        float maxDistanceSquared = maxDistance * maxDistance;
-        float minDist = maxDistanceSquared;
-
-        //escapes from closest predators. MOVE MINIMUM DISTANCE INTO FIND_NEARBY_ENTITIES!!
-        if (closePredatorsN != 0) {
-            minDist = closestPredatorDistance;
-            direction.x = -entities[closestPredatorIndex].position.x + entities[i].position.x;
-            direction.y = -entities[closestPredatorIndex].position.y + entities[i].position.y;
-            float accelerationMultiplier = maxAcceleration - maxAcceleration * sqrtf(minDist / maxDistance);
-
-            direction = Vector2Normalize(direction);
-            velocityChange.x += fabs(accelerationMultiplier) * direction.x * DELTA_TIME;
-            velocityChange.y += fabs(accelerationMultiplier) * direction.y * DELTA_TIME;
-        }
-
-        if (closestPlantsN != 0) {
-            direction = (Vector2){ trees[closestPlantIndex].worldPosition.x - entities[i].position.x, trees[closestPlantIndex].worldPosition.y - entities[i].position.y };
-            direction = Vector2Normalize(direction);
-            
-            //entity decides if it should go towards plant or escape enemy
-            if (closePredatorsN == 0 || minDist > closestPlantDistance) {
-                velocityChange.x += maxVelocity * direction.x * DELTA_TIME * PLANT_OVER_PREDATOR_MULT;
-                velocityChange.y += maxVelocity * direction.y * DELTA_TIME * PLANT_OVER_PREDATOR_MULT;
-            }
-        }
-        
-        if (fabs(entities[i].velocity.x) < ENTITY_MAX_SPEED) entities[i].velocity.x += velocityChange.x;
-        if (fabs(entities[i].velocity.y) < ENTITY_MAX_SPEED) entities[i].velocity.y += velocityChange.y;
-        entities[i].velocity.x = entities[i].velocity.x * ENTITY_SPEED_DECAY;
-        entities[i].velocity.y = entities[i].velocity.y * ENTITY_SPEED_DECAY;
-
-
-        entities[i].position = Vector2Add(entities[i].position, Vector2Scale(entities[i].velocity, DELTA_TIME));
-    
+        velocityChange = calculate_Prey_Velocity(i, Bonuses, closeEntitiesInfo.closePredatorsN, closePlantsInfo.closePlantsN, closeEntitiesInfo.closestPredatorDistance, closePlantsInfo.closestPlantDistance, closeEntitiesInfo.closestPredatorIndex, closePlantsInfo.closestPlantIndex);
     }
-    
-    /*
-    if(entities[i].prey == 0) {
-        if (closePreysN != 0) {
-            DrawLineV(entities[i].position, entities[closestPreyIndex].position, RED);
-            Vector2 direction = Vector2Subtract(entities[closestPreyIndex].position, entities[i].position);
-            direction = Vector2Normalize(direction);
-            entities[i].position = Vector2Add(entities[i].position, Vector2Scale(direction, DELTA_TIME * Bonuses.speedMultPred * entities[i].genome.speed * 2));
-            if (closestPreyDistance < PREY_ASSIMILATION_DISTANCE * TERRAIN_CELL_SIZE && entities[closestPreyIndex].energyBalance > MIN_ENERGY_BALANCE && entities[i].energyBalance < MAX_ENERGY_BALANCE) {
-                entities[closestPreyIndex].energyBalance -= 1 * DELTA_TIME;
-                entities[i].energyBalance += 1 * DELTA_TIME;
-            }
-        }
-    }*/
+    else {
+        velocityChange = calculate_Predator_Velocity(i, Bonuses, closeEntitiesInfo.closePreysN, closeEntitiesInfo.closestPreyIndex, closeEntitiesInfo.closestPreyDistance);
+    }
 
-
+    if (fabs(entities[i].velocity.x) < maxVelocity) entities[i].velocity.x += velocityChange.x;
+    if (fabs(entities[i].velocity.y) < maxVelocity) entities[i].velocity.y += velocityChange.y;
+    entities[i].velocity.x = entities[i].velocity.x * ENTITY_SPEED_DECAY;
+    entities[i].velocity.y = entities[i].velocity.y * ENTITY_SPEED_DECAY;
+    entities[i].position = Vector2Add(entities[i].position, Vector2Scale(entities[i].velocity, DELTA_TIME));
 }
 
 //Updates all entities each frames. Handles dead and reproducting cells, and empty trees.
@@ -558,7 +611,7 @@ void entity_Updater() {
             Entity newEntity = generate_Entity(1, entities[reproductingEntities[K]].prey, entities[reproductingEntities[K]].genome.speed, entities[reproductingEntities[K]].genome.velocity, entities[reproductingEntities[K]].genome.acceleration, entities[reproductingEntities[K]].genome.sightSize, entities[reproductingEntities[K]].genome.reproductionSpeed, entities[reproductingEntities[K]].genome.agingSpeed, Vector2Add(entities[reproductingEntities[K]].position, (Vector2) { GetRandomValue(-10, 10), GetRandomValue(-10, 10) }));
             entities[entitiesN] = newEntity;
             entitiesN++;
-            entities[reproductingEntities[K]].energyBalance -= 20;
+            entities[reproductingEntities[K]].energyBalance -= 28;
         }
     }
 
@@ -582,9 +635,6 @@ void entity_Updater() {
         }
         entitiesN--;
     }
-
-
-    
 
     free(deadEntities);
     free(reproductingEntities);
