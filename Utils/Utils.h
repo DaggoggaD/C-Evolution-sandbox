@@ -74,6 +74,7 @@ typedef enum {
     SEP_OP_SUB,    // -
     SEP_OP_LESS,   // <
     SEP_OP_GREAT,  // >
+    SEP_OP_NOT,    // !
 
     SEP_UNKNOWN    //Nan
 } SeparatorType;
@@ -107,6 +108,8 @@ typedef enum {
     KW_POW,
     KW_INCREASE,
     KW_DECREASE,
+    KW_GOE,
+    KW_LOE,
 
     KW_UNKNOWN
 } KeywordType;
@@ -130,3 +133,5 @@ int Read_User_String(char* StringBuffer, int MaxLen);
 void InstantiateSepTable();
 
 void PrintLexError(LexError Error);
+
+void PrintToken(TOKEN Tok);

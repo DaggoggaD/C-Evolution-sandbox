@@ -3,80 +3,117 @@
 
 TOKEN CurrToken;
 TOKEN NextToken;
+bool ParserEndOfTokens = false;
 
-extern TokenType AllowedPrimaryTokTypes[];
-
-typedef enum {
-	NONE,
-
-	//Primary
-	IDENTIFIER_P,
-	NUMBER,
-	STRING_P,
-	TRUE,
-	FALSE,
-	NUL,
-	GROUP_EXPR,
-	
-	//Unary
-	NOT,
-	NEGATIVE,
-	
-	//Factor
-	MULT,
-	DIV,
-	
-	//Term
-	PLUS,
-	MINUS,
-	
-	//Comparison
-	GREATER,
-	LESS,
-	GREATER_EQUAL,
-	LESS_EQUAL,
-
-	//Expression
-	NOT_EQUALS,
-	EQUALS,
-	ASSIGN
-} ParserTypes;
-
+//==================NON TERMINALS//==================
 typedef struct Expression;
 
-typedef struct {
-	ParserTypes Type;
+
+//__________NODE__________
+typedef enum {
+	NODE_NUMBER,
+	NODE_STRING,
+	NODE_BOOL,
+	NODE_NULL,
+	NODE_IDENTIFIER,
+	NODE_CALL,
+	NODE_GROUPING
+} NodeType;
+
+typedef struct S_NodeCall {
+	TOKEN CallNameTok;
+	struct Expression** Arguments; //Array of expressions
+	int ArgsNum;
+} NodeCall;
+
+typedef union {
 	TOKEN Tok;
-	struct Expression* GroupExpression;
-} Primary;
+	NodeCall FuncCall;
+	struct Expression* NodeGrouping;
+} NodeValue;
 
-typedef struct {
-	ParserTypes Type;
-	Primary PrimaryValue;
-} Unary;
+typedef struct S_Node {
+	NodeType Type;
+	NodeValue Value;
+} Node;
 
-typedef struct Factor{
-	Unary Left;
-	ParserTypes Type;
-	struct Factor* Right;
+//__________FACTOR__________
+
+typedef enum {
+	FACTOR_NEGATIVE,
+	FACTOR_NOT,
+	FACTOR_NONE
+} FactorType;
+
+typedef struct S_Factor {
+	FactorType Type;
+	struct Expression* Value;
+
 } Factor;
 
-typedef struct Term{
-	Factor Left;
-	ParserTypes Type;
-	struct Term* Right;
+//__________TERM__________
+
+typedef enum {
+	TERM_DIVISION,
+	TERM_MOLTIPLICATION,
+	TERM_NONE
+} TermType;
+
+typedef struct S_Term {
+	TermType Type;
+	struct Expression* Left;
+	struct Expression* Right;
 } Term;
 
-typedef struct Comparison{
-	Term Left;
-	ParserTypes Type;
-	struct Comparison* Right;
-} Comparison;
+//__________EXPRESSIONS__________
 
-typedef struct Expression{
-	Comparison Left;
-	ParserTypes Type;
+typedef enum {
+	EXPRESSION_BINARY,
+	EXPRESSION_TERM,
+	EXPRESSION_FACTOR,
+	EXPRESSION_NODE
+} ExpressionType;
+
+//###Sub-Expressions###
+typedef enum {
+	BINARY_ADD,
+	BINARY_SUB,
+	BINARY_LESS,
+	BINARY_GREATER,
+	BINARY_LOE,
+	BINARY_GOE,
+	BINARY_EQUAL,
+	BINARY_NOE,
+	BINARY_ASSIGN,
+	BINARY_NONE
+} BinaryExpressionType;
+
+typedef struct S_BinExpr {
+	BinaryExpressionType Type;
+	struct Expression* Left;
 	struct Expression* Right;
+} BinaryExpression;
+
+//#####Expression main struct#####
+
+typedef union {
+	BinaryExpression* BinExpr;
+	Term* TermExpr;
+	Factor* FactorExpr;
+	Node* NodeExpr;
+} ExpressionValue;
+
+typedef struct S_Expression {
+	ExpressionType Type;
+	ExpressionValue Value;
 } Expression;
 
+
+typedef struct S_ExpressionList {
+	Expression Expr;
+	struct S_ExpressionList* Next;
+} ExpressionList;
+
 void Parse();
+
+Expression* BinExprParse();

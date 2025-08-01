@@ -12,7 +12,7 @@ FILE* Shell() {
 
 	//For debug purposes
 	if (String[0] == '\0') {
-		strcpy(String, "C:\\Users\\dacco\\source\\repos\\NanoHomeScript\\NanoHomeScript\\Tests\\Grammar.nhs");
+		strcpy(String, "C:\\Users\\dacco\\source\\repos\\NanoHomeScript\\NanoHomeScript\\Tests\\Test.nhs");
 	}
 
 
